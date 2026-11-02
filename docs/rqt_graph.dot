@@ -1,0 +1,79 @@
+digraph rqt_graph {
+    rankdir=LR;
+    node [fontsize=11, fontname="Helvetica"];
+    edge [fontsize=10, fontname="Helvetica"];
+
+    // Nodes (represented as ellipses/ovals)
+    node [shape=ellipse, style="filled,solid", color="#2c3e50", fillcolor="#ecf0f1", penwidth=1.5];
+    robot_state_publisher [label="/robot_state_publisher"];
+    ros_gz_bridge [label="/ros_gz_bridge\n(parameter_bridge)"];
+    obstacle_detector [label="/obstacle_detector"];
+    drive_controller [label="/drive_controller\n(idle)"];
+    drive_distance_server [label="/drive_distance_server"];
+    rotate_server [label="/rotate_server"];
+    square_driver [label="/square_driver\n(action client)"];
+    rviz [label="/rviz2"];
+
+    // Topics (represented as rectangles)
+    node [shape=box, style="filled,rounded", color="#2980b9", fillcolor="#e8f4f8", penwidth=1.2];
+    topic_clock [label="/clock\n[rosgraph_msgs/Clock]"];
+    topic_joint_states [label="/joint_states\n[sensor_msgs/JointState]"];
+    topic_tf [label="/tf\n[tf2_msgs/TFMessage]"];
+    topic_odom [label="/odom\n[nav_msgs/Odometry]"];
+    topic_scan [label="/scan\n[sensor_msgs/LaserScan]"];
+    topic_depth_image [label="/depth_camera/image\n[sensor_msgs/Image]"];
+    topic_depth_points [label="/depth_camera/points\n[sensor_msgs/PointCloud2]"];
+    topic_depth_info [label="/depth_camera/camera_info\n[sensor_msgs/CameraInfo]"];
+    topic_imu [label="/imu\n[sensor_msgs/Imu]"];
+    topic_obstacle [label="/obstacle\n[lab_interfaces/ObstacleInfo]"];
+    topic_cmd_vel [label="/cmd_vel\n[geometry_msgs/Twist]"];
+
+    // Action Topics / Interfaces
+    node [shape=component, style="filled", color="#8e44ad", fillcolor="#f4ecf7", penwidth=1.2];
+    action_drive_distance [label="/drive_distance\n[lab_interfaces/action/DriveDistance]"];
+    action_rotate [label="/rotate\n[my_robot_interfaces/action/Rotate]"];
+
+    // Gazebo Bridge Connections
+    ros_gz_bridge -> topic_clock;
+    ros_gz_bridge -> topic_joint_states;
+    ros_gz_bridge -> topic_tf;
+    ros_gz_bridge -> topic_odom;
+    ros_gz_bridge -> topic_scan;
+    ros_gz_bridge -> topic_depth_image;
+    ros_gz_bridge -> topic_depth_points;
+    ros_gz_bridge -> topic_depth_info;
+    ros_gz_bridge -> topic_imu;
+    topic_cmd_vel -> ros_gz_bridge;
+
+    // Robot state publisher
+    topic_joint_states -> robot_state_publisher;
+    robot_state_publisher -> topic_tf;
+
+    // Obstacle detector
+    topic_scan -> obstacle_detector;
+    obstacle_detector -> topic_obstacle;
+
+    // Drive Controller (idle during square driving)
+    topic_obstacle -> drive_controller;
+
+    // Drive Distance Action Server
+    topic_odom -> drive_distance_server;
+    topic_obstacle -> drive_distance_server;
+    drive_distance_server -> topic_cmd_vel;
+    drive_distance_server -> action_drive_distance [dir=both, style=dashed, color="#8e44ad", label="serves"];
+
+    // Rotate Action Server
+    topic_odom -> rotate_server;
+    rotate_server -> topic_cmd_vel;
+    rotate_server -> action_rotate [dir=both, style=dashed, color="#8e44ad", label="serves"];
+
+    // Square Driver Action Client
+    square_driver -> action_drive_distance [style=bold, color="#8e44ad", label="calls (4x)"];
+    square_driver -> action_rotate [style=bold, color="#8e44ad", label="calls (4x)"];
+
+    // RViz visualization subscriptions
+    topic_tf -> rviz;
+    topic_scan -> rviz;
+    topic_depth_image -> rviz;
+    topic_depth_points -> rviz;
+}
